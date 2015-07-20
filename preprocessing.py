@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 
-#data = pd.read_csv("Customer_level_data_PL", sep="|")
-data = pd.read_csv("cust_casa_dec.csv")
+data = pd.read_csv("Customer_level_data_PL", sep="|")
 
 #print np.sum(pd.isnull(data))
 
@@ -37,7 +36,7 @@ del data['ZIP_CODE'] #20000
 train = data.ix[data['Base_tag'] == "D",:]
 test = data.ix[data['Base_tag'] == "V",:]
 
-train.to_csv("train_withcasadec.csv", index = False)
-test.to_csv("test_withcasadec.csv", index = False)
+train.to_csv("train.csv", index = False)
+test.to_csv("test.csv", index = False)
 
 print "train, test sets written to disk!"
