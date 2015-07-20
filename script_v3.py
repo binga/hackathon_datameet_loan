@@ -19,8 +19,6 @@ del test['Net_relationship_value_bin']
 del train['Branch_City']
 del test['Branch_City']
 
-#train['Branch_City'] = list(pd.factorize(train['Branch_City']))
-
 del train['AQB']
 del test['AQB']
 
@@ -32,12 +30,6 @@ del test['Total_Invest_in_MF']
 
 del train['salary_dec14']
 del test['salary_dec14']
-
-#print train['salary_Dec14'].head()
-
-#exit()
-#train['mva'] = np.median(train['salary_feb15'] + train['salary_jan15'])# + train['salary_dec14'])
-#test['mva'] = np.median(test['salary_feb15'] + test['salary_jan15'])# + test['salary_dec14'])
 
 dict_event = {'N' : 0, 'Y' : 1}
 train['event'].replace(dict_event, inplace = True)
@@ -51,9 +43,6 @@ test['Event_and_Credit_Card_cash_withd'].replace(dict_event, inplace = True)
 
 train['COC_DAE_EASY_EMI_tag'].replace(dict_event, inplace = True)
 test['COC_DAE_EASY_EMI_tag'].replace(dict_event, inplace = True)
-
-# train = train[['ID', 'pl_holding', 'RESPONDER']]
-# test = test[['ID', 'pl_holding', 'RESPONDER']]
 
 # PAPQ - others  or PA
 # IF debit spends < 932 1 else 0
@@ -82,17 +71,6 @@ params = {'objective':'binary:logistic', 'max_depth':7, 'eta':0.07, 'silent':1, 
 
 num_rounds = 100
 
-#xgb.cv(param, dtrain, num_round, nfold = 5, seed = 0, feval=evalfunc, obj = Giniii)
-
-def zoneEvalMetric(actual, predicted, topTen=10):
-    scores = pd.DataFrame({'actual':actual, 'predicted':predicted})
-    scores.sort(columns='predicted', ascending=False, inplace=True)
-    scores.reset_index(inplace = True)
-    numerator = np.sum(scores.ix[0:int((float(topTen)*len(scores))/100), 'actual'])
-    total = float(np.sum(scores['actual']))
-    evalMetric = float(numerator)/total
-    return evalMetric * 100
-
 def zoneEvalMetricXgB(predicted, dtrain, topTen=10):
 	actual = dtrain.get_label()
 	scores = pd.DataFrame({'actual':actual, 'predicted':predicted})
@@ -105,83 +83,77 @@ def zoneEvalMetricXgB(predicted, dtrain, topTen=10):
 
 bst = xgb.train(params, dtrain, num_rounds, watchlist, feval=zoneEvalMetricXgB)
 
-
-print bst.get_fscore()
-
-#train_preds = bst.predict(train)
 test_preds = bst.predict(dtest)
 submit = pd.DataFrame({'ID': ids_test, 'probability':test_preds, 'RESPONDER':target_final})
 submit.to_csv("Finalprobs.csv", index = False)
 
 
-# print "Train eval score:", zoneEvalMetric(y, train_preds, 10)
-# print "Test eval score:", zoneEvalMetric(target_final, test_preds, 10)
+## Random Forest Relative Importances
+## -----------------------------------
+                       features  importance
+3           RATIO_EOP_BAL_FEB15    0.045353
+19                    SEP14_Bal    0.035617
+83                 pl_holding_a    0.035310
+23                    NOV14_Bal    0.035075
+1                           AQB    0.033426
+24                    NOV14_EOP    0.032853
+25                    DEC14_Bal    0.032754
+29                    FEB15_Bal    0.032658
+27                    JAN15_Bal    0.032349
+21                    OCT14_Bal    0.032286
+30                    FEB15_EOP    0.031592
+22                    OCT14_EOP    0.031213
+20                    SEP14_EOP    0.031131
+26                    DEC14_EOP    0.030819
+85                 pl_holding_c    0.030369
+2   Number_Balance_enquiries_3m    0.030248
+28                    JAN15_EOP    0.030182
+4                   DC_SPEND_3M    0.030125
+5                   CC_SPEND_3M    0.028195
+0                           AGE    0.023862
+18                 salary_feb15    0.022193
+17                 salary_jan15    0.020901
+16                 salary_nov14    0.020320
+15                 salary_oct14    0.017484
+14                 salary_sep14    0.017455
+7           Total_asset_holding    0.016579
+13                 product_code    0.015397
+33               Dmat_Investing    0.010909
+32               RD_AMOUNT_BOOK    0.010644
+41       COC_DAE_EASY_EMI_tag_N    0.008661
+..                          ...         ...
+38    Transactor_revolver_tag_N    0.002601
+92                      event_N    0.002588
+66          ratio_eop_amb_bin_d    0.002553
+81                hnw_segment_b    0.002451
+36    Transactor_revolver_tag_D    0.002435
+55       Prematured_FD_Tag_3M_N    0.002420
+34             Account_type_CSA    0.002363
+73        balance_enquiry_bin_a    0.002347
+56       Prematured_FD_Tag_3M_Y    0.002323
+48                  PAPQ_Tag_PQ    0.002287
+76        balance_enquiry_bin_d    0.002181
+74        balance_enquiry_bin_b    0.002107
+35              Account_type_SA    0.002070
+70          ratio_eop_amb_bin_h    0.002050
+59           closed_RD_Tag_3M_N    0.001918
+50                CITY_CHANGE_Y    0.001910
+67          ratio_eop_amb_bin_e    0.001899
+61           closed_FD_Tag_3M_N    0.001897
+51          Joint_account_tag_N    0.001870
+52          Joint_account_tag_Y    0.001820
+69          ratio_eop_amb_bin_g    0.001809
+62           closed_FD_Tag_3M_Y    0.001751
+49                CITY_CHANGE_N    0.001717
+60           closed_RD_Tag_3M_Y    0.001634
+54          CHQ_BOUNCE_TAG_3M_Y    0.001535
+53          CHQ_BOUNCE_TAG_3M_N    0.001445
+68          ratio_eop_amb_bin_f    0.001372
+65          ratio_eop_amb_bin_c    0.000525
+63          ratio_eop_amb_bin_a    0.000360
+64          ratio_eop_amb_bin_b    0.000259
 
-
-#                             features  importance
-# 69                      pl_holding_a    0.085316
-# 71                      pl_holding_c    0.071364
-# 2             Net_relationship_value    0.064362
-# 14                         FEB15_Bal    0.061576
-# 1                                AQB    0.060755
-# 15                         FEB15_EOP    0.057640
-# 4                        DC_SPEND_3M    0.051945
-# 3        Number_Balance_enquiries_3m    0.051476
-# 5                        CC_SPEND_3M    0.046574
-# 0                                AGE    0.038941
-# 13                      product_code    0.025612
-# 7                Total_asset_holding    0.019522
-# 27            COC_DAE_EASY_EMI_tag_N    0.018774
-# 19                Total_Invest_in_MF    0.017487
-# 25         Transactor_revolver_tag_R    0.016750
-# 17                    RD_AMOUNT_BOOK    0.016475
-# 28            COC_DAE_EASY_EMI_tag_Y    0.015820
-# 18                    Dmat_Investing    0.015767
-# 16                    FD_AMOUNT_BOOK    0.014933
-# 58               ratio_eop_amb_bin_j    0.013485
-# 10              Prematured_rd_cnt_3M    0.009060
-# 65             balance_enquiry_bin_g    0.007844
-# 70                      pl_holding_b    0.007735
-# 32                    PAPQ_Tag_OTHER    0.007651
-# 75        OUR_BANK_OTHER_BANK_loan_d    0.007216
-# 33                       PAPQ_Tag_PA    0.007202
-# 20                  Account_type_CSA    0.006831
-# 66                     hnw_segment_a    0.006724
-# 21                   Account_type_SA    0.006267
-# 9               Prematured_fd_cnt_3M    0.005995
-# ..                               ...         ...
-# 11                  closed_rd_cnt_3M    0.002544
-# 34                       PAPQ_Tag_PQ    0.002407
-# 62             balance_enquiry_bin_d    0.002395
-# 83      Net_relationship_value_bin_h    0.002391
-# 6   Number_Accounts_under_Joint_acco    0.002346
-# 24         Transactor_revolver_tag_N    0.002331
-# 42            Prematured_FD_Tag_3M_Y    0.002325
-# 81      Net_relationship_value_bin_f    0.002311
-# 67                     hnw_segment_b    0.002264
-# 57               ratio_eop_amb_bin_i    0.002239
-# 53               ratio_eop_amb_bin_e    0.002146
-# 84      Net_relationship_value_bin_i    0.002104
-# 46                closed_RD_Tag_3M_Y    0.002011
-# 38               Joint_account_tag_Y    0.001930
-# 37               Joint_account_tag_N    0.001866
-# 56               ratio_eop_amb_bin_h    0.001799
-# 45                closed_RD_Tag_3M_N    0.001695
-# 22         Transactor_revolver_tag_D    0.001687
-# 55               ratio_eop_amb_bin_g    0.001377
-# 47                closed_FD_Tag_3M_N    0.001301
-# 36                     CITY_CHANGE_Y    0.001276
-# 35                     CITY_CHANGE_N    0.001260
-# 8                  CHQ_BOUNCE_CNT_3M    0.001232
-# 40               CHQ_BOUNCE_TAG_3M_Y    0.001166
-# 48                closed_FD_Tag_3M_Y    0.001128
-# 39               CHQ_BOUNCE_TAG_3M_N    0.001080
-# 49               ratio_eop_amb_bin_a    0.000352
-# 76      Net_relationship_value_bin_a    0.000338
-# 51               ratio_eop_amb_bin_c    0.000242
-# 50               ratio_eop_amb_bin_b    0.000225
-
-
+## - Added AUC values - aise hi! If you want to have a look at it
 # [88]	test-auc:0.841064	train-auc:0.897911
 # [89]	test-auc:0.841113	train-auc:0.898692
 # [90]	test-auc:0.841356	train-auc:0.899177
