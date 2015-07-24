@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-train = pd.read_csv("train.csv")
-test = pd.read_csv("test.csv")
+train = pd.read_csv("data/train.csv")
+test = pd.read_csv("data/test.csv")
 
 #train1 = pd.read_csv("train_5.csv", usecols=["AQB", "FEB15_Bal"])
 #test1 = pd.read_csv("test_5.csv", usecols=["AQB", "FEB15_Bal"])
@@ -33,24 +33,25 @@ del test['Total_Invest_in_MF']
 del train['salary_dec14']
 del test['salary_dec14']
 
-#print train['salary_Dec14'].head()
+# print train['salary_Dec14'].head()
 
-#exit()
-#train['mva'] = np.median(train['salary_feb15'] + train['salary_jan15'])# + train['salary_dec14'])
-#test['mva'] = np.median(test['salary_feb15'] + test['salary_jan15'])# + test['salary_dec14'])
+# exit()
+# train['mva'] = np.median(train['salary_feb15'] + train['salary_jan15'])# + train['salary_dec14'])
+# test['mva'] = np.median(test['salary_feb15'] + test['salary_jan15'])# +
+# test['salary_dec14'])
 
-dict_event = {'N' : 0, 'Y' : 1}
-train['event'].replace(dict_event, inplace = True)
-test['event'].replace(dict_event, inplace = True)
+dict_event = {'N': 0, 'Y': 1}
+train['event'].replace(dict_event, inplace=True)
+test['event'].replace(dict_event, inplace=True)
 
-train['cc_cash_withdrawal_tag'].replace(dict_event, inplace = True)
-test['cc_cash_withdrawal_tag'].replace(dict_event, inplace = True)
+train['cc_cash_withdrawal_tag'].replace(dict_event, inplace=True)
+test['cc_cash_withdrawal_tag'].replace(dict_event, inplace=True)
 
-train['Event_and_Credit_Card_cash_withd'].replace(dict_event, inplace = True)
-test['Event_and_Credit_Card_cash_withd'].replace(dict_event, inplace = True)
+train['Event_and_Credit_Card_cash_withd'].replace(dict_event, inplace=True)
+test['Event_and_Credit_Card_cash_withd'].replace(dict_event, inplace=True)
 
-train['COC_DAE_EASY_EMI_tag'].replace(dict_event, inplace = True)
-test['COC_DAE_EASY_EMI_tag'].replace(dict_event, inplace = True)
+train['COC_DAE_EASY_EMI_tag'].replace(dict_event, inplace=True)
+test['COC_DAE_EASY_EMI_tag'].replace(dict_event, inplace=True)
 
 # train = train[['ID', 'pl_holding', 'RESPONDER']]
 # test = test[['ID', 'pl_holding', 'RESPONDER']]
@@ -68,40 +69,44 @@ ids_test = test['ID']
 y = train['RESPONDER']
 target_final = test['RESPONDER']
 
-train.drop(['ID', 'RESPONDER'], inplace = True, axis = 1)
+train.drop(['ID', 'RESPONDER'], inplace=True, axis=1)
 test.drop(['ID', 'RESPONDER'], inplace=True, axis=1)
 
 import xgboost as xgb
 
-dtrain = xgb.DMatrix(train, label = y, missing = -1)
-dtest = xgb.DMatrix(test, target_final, missing = -1)
-watchlist = [(dtest,'test'), (dtrain,'train')]
+dtrain = xgb.DMatrix(train, label=y, missing=-1)
+dtest = xgb.DMatrix(test, target_final, missing=-1)
+watchlist = [(dtest, 'test'), (dtrain, 'train')]
 
-params = {'objective':'binary:logistic', 'max_depth':7, 'eta':0.07, 'silent':1, 'subsample' : 0.6, #'eval_metric':'auc',
-			'nthread':4, 'colsample_bytree':0.7, 'missing' : -1,  'scale_pos_weight': 3}
+params = {'objective': 'binary:logistic', 'max_depth': 7, 'eta': 0.07, 'silent': 1, 'subsample': 0.6,  # 'eval_metric':'auc',
+          'nthread': 4, 'colsample_bytree': 0.7, 'missing': -1,  'scale_pos_weight': 3}
 
-num_rounds = 100
+num_rounds = 150
 
 #xgb.cv(param, dtrain, num_round, nfold = 5, seed = 0, feval=evalfunc, obj = Giniii)
 
+
 def zoneEvalMetric(actual, predicted, topTen=10):
-    scores = pd.DataFrame({'actual':actual, 'predicted':predicted})
+    scores = pd.DataFrame({'actual': actual, 'predicted': predicted})
     scores.sort(columns='predicted', ascending=False, inplace=True)
-    scores.reset_index(inplace = True)
-    numerator = np.sum(scores.ix[0:int((float(topTen)*len(scores))/100), 'actual'])
+    scores.reset_index(inplace=True)
+    numerator = np.sum(
+        scores.ix[0:int((float(topTen)*len(scores))/100), 'actual'])
     total = float(np.sum(scores['actual']))
     evalMetric = float(numerator)/total
     return evalMetric * 100
 
+
 def zoneEvalMetricXgB(predicted, dtrain, topTen=10):
-	actual = dtrain.get_label()
-	scores = pd.DataFrame({'actual':actual, 'predicted':predicted})
-	scores.sort(columns='predicted', ascending=False, inplace=True)
-	scores.reset_index(inplace = True)
-	numerator = np.sum(scores.ix[0:int((float(topTen)*len(scores))/100), 'actual'])
-	total = float(np.sum(scores['actual']))
-	evalMetric = float(numerator)/total
-	return 'metric', evalMetric * 100
+    actual = dtrain.get_label()
+    scores = pd.DataFrame({'actual': actual, 'predicted': predicted})
+    scores.sort(columns='predicted', ascending=False, inplace=True)
+    scores.reset_index(inplace=True)
+    numerator = np.sum(
+        scores.ix[0:int((float(topTen)*len(scores))/100), 'actual'])
+    total = float(np.sum(scores['actual']))
+    evalMetric = float(numerator)/total
+    return 'metric', evalMetric * 100
 
 bst = xgb.train(params, dtrain, num_rounds, watchlist, feval=zoneEvalMetricXgB)
 
@@ -110,8 +115,9 @@ print bst.get_fscore()
 
 #train_preds = bst.predict(train)
 test_preds = bst.predict(dtest)
-submit = pd.DataFrame({'ID': ids_test, 'probability':test_preds, 'RESPONDER':target_final})
-submit.to_csv("Finalprobs.csv", index = False)
+submit = pd.DataFrame(
+    {'ID': ids_test, 'probability': test_preds, 'RESPONDER': target_final})
+submit.to_csv("data/Finalprobs.csv", index=False)
 
 
 # print "Train eval score:", zoneEvalMetric(y, train_preds, 10)
